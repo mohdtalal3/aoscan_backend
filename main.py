@@ -31,10 +31,22 @@ def process_form_data(data):
         print(audio_notes)
         print(image_notes)  
         image_notes_downloader(sb, image_notes)
-        create_pdf_report(notes_order=image_notes)
-        #download_notes_audio(audio_notes)
+        
+        # Generate PDF report with unique filename
+        pdf_path = f"report_{data.get('email', 'unknown').replace('@', '_at_').replace('.', '_')}.pdf"
+        create_pdf_report(notes_order=image_notes, output_file=pdf_path)
+        
+        # Get audio files from pre-downloaded notes_audio folder
+        audio_files = get_notes_audio(audio_notes)
     
-    return True
+    # Return generated file paths and user info for email sending
+    return {
+        'success': True,
+        'pdf_path': pdf_path,
+        'audio_files': audio_files if audio_files else [],
+        'email': data.get('email'),
+        'name': f"{data.get('first_name', '')} {data.get('last_name', '')}"
+    }
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:

@@ -254,41 +254,61 @@ import requests
 
 # Base URL
 
-def download_notes_audio(notes):
-    BASE_URL = "https://app.aoscan.com"
-    # Mapping of notes to file paths
-    NOTE_TO_PATH = {
-        "C": "/audio/innervoice/Zone 1 C.mp3",
-        "C#": "/audio/innervoice/Zone 2 Csharp.mp3",
-        "D": "/audio/innervoice/Zone 3 D.mp3",
-        "D#": "/audio/innervoice/Zone 4 Dsharp.mp3",
-        "E": "/audio/innervoice/Zone 5 E.mp3",
-        "F": "/audio/innervoice/Zone 6 F.mp3",
-        "F#": "/audio/innervoice/Zone 7 Fsharp.mp3",
-        "G": "/audio/innervoice/Zone 8 G.mp3",
-        "G#": "/audio/innervoice/Zone 9 Gsharp.mp3",
-        "A": "/audio/innervoice/Zone 10 A.mp3",
-        "A#": "/audio/innervoice/Zone 11 Asharp.mp3",
-        "B": "/audio/innervoice/Zone 12 B.mp3"
+import shutil
+
+def get_notes_audio(notes, source_folder="notes_audio"):
+    """
+    Copy pre-downloaded audio files for the specified notes
+    Files are located in backend/notes_audio/ directory
+    
+    Args:
+        notes: List of musical notes (e.g., ['C', 'D#', 'E'])
+        source_folder: Folder containing pre-downloaded audio files
+    
+    Returns:
+        List of file paths that were copied
+    """
+    # Mapping of notes to file names in notes_audio folder
+    NOTE_TO_FILENAME = {
+        "C": "C.mp3",
+        "C#": "C#.mp3",
+        "D": "D.mp3",
+        "D#": "D#.mp3",
+        "E": "E.mp3",
+        "F": "F.mp3",
+        "F#": "F#.mp3",
+        "G": "G.mp3",
+        "G#": "G#.mp3",
+        "A": "A.mp3",
+        "A#": "A#.mp3",
+        "B": "B.mp3"
     }
+    
+    copied_files = []
     
     # Iterate through the list of notes
     for note in notes:
         note = note.upper().replace("♯", "#")  # Handle Unicode sharp symbol if needed
-        if note not in NOTE_TO_PATH:
-            print(f"Note '{note}' not found.")
+        if note not in NOTE_TO_FILENAME:
+            print(f"Note '{note}' not found in mapping.")
             continue
 
-        path = NOTE_TO_PATH[note]
-        url = BASE_URL + path.replace(" ", "%20")  # Encode spaces
-        filename = path.split("/")[-1]
-
-        print(f"Downloading {note} from {url}...")
-
-        response = requests.get(url)
-        if response.status_code == 200:
-            with open(filename, "wb") as f:
-                f.write(response.content)
-            print(f"Downloaded and saved as {filename}")
-        else:
-            print(f"Failed to download {note}. Status code: {response.status_code}")
+        filename = NOTE_TO_FILENAME[note]
+        source_path = os.path.join(source_folder, filename)
+        
+        # Check if source file exists
+        if not os.path.exists(source_path):
+            print(f"⚠️  Audio file not found: {source_path}")
+            continue
+        
+        # Copy file to current directory with same name
+        destination_path = filename
+        
+        try:
+            shutil.copy2(source_path, destination_path)
+            print(f"✅ Copied: {filename}")
+            copied_files.append(destination_path)
+        except Exception as e:
+            print(f"❌ Error copying {filename}: {str(e)}")
+    
+    return copied_files

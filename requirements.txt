@@ -1,0 +1,26 @@
+# Flask and CORS
+Flask
+flask-cors
+
+# Google Sheets
+gspread
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+
+# Web requests
+requests
+
+# Environment variables
+python-dotenv
+
+# Selenium and automation
+seleniumbase
+
+# PDF processing
+PyPDF2
+reportlab
+svglib
+
+# Image processing
+Pillow

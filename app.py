@@ -45,10 +45,42 @@ def process_queue_worker():
             from main import process_form_data
             result = process_form_data(client_data)
             
-            print(f"\n✅ Successfully processed: {client_data.get('first_name')} {client_data.get('last_name')}\n")
-            
+            if result and result.get('success'):
+                print(f"\n✅ Successfully processed: {client_data.get('first_name')} {client_data.get('last_name')}\n")
+                
+                # Send email with attachments
+                from email_utils import send_email_with_attachments, update_google_sheet_expire_status, cleanup_generated_files
+                
+                pdf_path = result.get('pdf_path')
+                audio_files = result.get('audio_files', [])
+                email = result.get('email')
+                name = result.get('name')
+                
+                print(f"📧 Sending email to {email}...")
+                email_sent = send_email_with_attachments(email, name, pdf_path, audio_files)
+                
+                if email_sent:
+                    print(f"✅ Email sent successfully to {email}")
+                    
+                    # Update Google Sheets to set Expire = TRUE
+                    print(f"📝 Updating Google Sheet for {email}...")
+                    sheet_updated = update_google_sheet_expire_status(email)
+                    
+                    if sheet_updated:
+                        print(f"✅ Google Sheet updated: Expire set to TRUE for {email}")
+                    else:
+                        print(f"⚠️  Could not update Google Sheet for {email}")
+                    
+                    # Cleanup generated files
+                    print(f"🗑️  Cleaning up generated files...")
+                    cleanup_generated_files(pdf_path, audio_files, images_folder='images')
+                else:
+                    print(f"⚠️  Email sending failed for {email}. Files not deleted.")
+                    
         except Exception as e:
             print(f"\n❌ Error processing {client_data.get('first_name')} {client_data.get('last_name')}: {str(e)}\n")
+            import traceback
+            traceback.print_exc()
         
         finally:
             # Clean up: remove the downloaded audio file after processing
