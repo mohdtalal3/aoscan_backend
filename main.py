@@ -13,6 +13,8 @@ def process_form_data(data):
     chrome_args = [
         "--use-fake-device-for-media-stream",
         "--use-fake-ui-for-media-stream",
+        "--allow-file-access-from-files",
+        "--auto-select-desktop-capture-source=default",
         f"--use-file-for-fake-audio-capture={audio_file_path}"
     ]
 
@@ -20,7 +22,7 @@ def process_form_data(data):
     full_path = os.path.abspath("chromedata")
     
     # Initialize the SeleniumBase context manager with Chrome options
-    with SB(uc=True, headless=False, chromium_arg=chrome_args, user_data_dir=full_path) as sb:
+    with SB( headless=True, chromium_arg=chrome_args, user_data_dir=full_path) as sb:
         # Open the target website
         sb.open("https://app.aoscan.com/AOScanMobileLogin")
         sign_in(sb)
@@ -30,6 +32,7 @@ def process_form_data(data):
         audio_notes, image_notes = extract_notes(sb)
         print(audio_notes)
         print(image_notes)  
+
         image_notes_downloader(sb, image_notes)
         
         # Generate PDF report with unique filename

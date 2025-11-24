@@ -14,8 +14,9 @@ load_dotenv()
 # Email Configuration
 SMTP_SERVER = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
 SMTP_PORT = int(os.getenv('SMTP_PORT', '587'))
+SMTP_USERNAME = os.getenv('SMTP_USERNAME')
+SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 SENDER_EMAIL = os.getenv('SENDER_EMAIL')
-SENDER_PASSWORD = os.getenv('SENDER_PASSWORD')
 
 # Google Sheets Configuration
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
@@ -97,9 +98,18 @@ This is an automated message. Please do not reply to this email.
         
         # Send email
         print(f"📧 Sending email to {recipient_email}...")
+        
+        # Validate email configuration
+        if not SENDER_EMAIL or not SMTP_PASSWORD:
+            raise ValueError("Email configuration is incomplete. Check SENDER_EMAIL and SMTP_PASSWORD in .env file")
+        
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+        
+        # Use SMTP_USERNAME if available, otherwise use SENDER_EMAIL
+        login_email = SMTP_USERNAME if SMTP_USERNAME else SENDER_EMAIL
+        server.login(login_email, SMTP_PASSWORD)
+        
         server.send_message(msg)
         server.quit()
         

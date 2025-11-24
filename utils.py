@@ -62,17 +62,22 @@ def create_client(sb,data):
         sb.select_option_by_value('select[aria-label="Unit of Height"]', "cm")
     sb.send_keys("#height",data["height"])
     #make sure format must be like this 1990-05-10 code to convert date to this format
-    sb.send_keys("#birthDate",data["date_of_birth"])
+    #sb.send_keys("#birthDate",data["date_of_birth"])
+    try:
+        sb.click("//button[normalize-space(.)='Cancel']",timeout=5)
+    except:
+        pass
     sb.click('button span[data-i18n="ao-nav-save-and-home"]')
+
     return True
 
 
 def scan_inner_voice(sb):
+
+
     sb.wait_for_element('button span[data-i18n="ao-nav-innervoice"]',timeout=1000)
     sb.click('button span[data-i18n="ao-nav-innervoice"]',timeout=10)
-    sb.click('#btnRecord',timeout=10)
-    sb.click('button span[data-i18n="ao-innervoice-reports"]',timeout=1000)
-    time.sleep(10)   
+    sb.click('#btnRecord',timeout=10)   
     return True
 
 
@@ -80,21 +85,25 @@ def extract_notes(sb):
     sb.wait_for_element(".innervoice-btn-notenofill .mt-1",timeout=1000)
     audio_note_elements = sb.find_elements(".innervoice-btn-notenofill .mt-1")
 
-    # Extract the text content of each note
-    notes = [el.text.strip() for el in audio_note_elements]
-
+    # Extract the text content of each note and filter out empty strings
+    notes = [el.text.strip() for el in audio_note_elements if el.text.strip()]
     print("Extracted notes:", notes)
+
+    sb.wait_for_element('span[data-i18n="ao-innervoiceviewer-pulse"]',timeout=1000)
+    sb.click('span[data-i18n="ao-innervoiceviewer-pulse"]',timeout=10)
     sb.wait_for_element(".text-center.my-auto.mx-auto")
     image_note_elements = sb.find_elements(".text-center.my-auto.mx-auto")
 
 
-    image_notes = [el.text.strip() for el in image_note_elements]
+    image_notes = [el.text.strip() for el in image_note_elements if el.text.strip()]
 
     print("Extracted image notes:", image_notes)
     try:
-        image_notes.append(sb.find_element(".mt-2.bg-dark.text-white.mx-auto").text.strip())
+        additional_note = sb.find_element(".mt-2.bg-dark.text-white.mx-auto").text.strip()
+        if additional_note:
+            image_notes.append(additional_note)
     except:
-        print("No image notes found")
+        print("No additional image notes found")
         pass
     return notes, image_notes
 
@@ -215,14 +224,15 @@ def create_pdf_report(image_folder="images", output_file="report.pdf", notes_ord
 
 def image_notes_downloader(sb,notes_to_download=None):
     # Using SeleniumBase context manager
-
+    sb.click('button span[data-i18n="ao-innervoice-reports"]',timeout=1000)
+    time.sleep(3)
     # Always download these common SVGs
     common_svgs = [
         {"id": "#coverpage", "filename": "coverpage"},
         {"id": "#innervoiceinfo", "filename": "innervoiceinfo"},
         {"id": "#howtouse", "filename": "howtouse"}
     ]
-    
+   # input("Press Enter to start downloading SVGs...")
     print("Downloading common SVGs...")
     for svg_obj in common_svgs:
         download_svg_object(sb, svg_obj["id"], svg_obj["filename"])

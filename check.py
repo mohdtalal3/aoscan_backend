@@ -8,14 +8,15 @@ print(audio_file_path)
 chrome_args = [
     "--use-fake-device-for-media-stream",
     "--use-fake-ui-for-media-stream",
-    f"--use-file-for-fake-audio-capture={audio_file_path}"
+    "--allow-file-access-from-files",
+    "--auto-select-desktop-capture-source=default",
+    f"--use-file-for-fake-audio-capture=file.wav"
 ]
-
 # Path to your audio file
 full_path = os.path.abspath("chromedata")
 
 # Initialize the SeleniumBase context manager with Chrome options
-with SB(uc=True, headless=False, chromium_arg=chrome_args) as sb:
+with SB(headless=False, chromium_arg=chrome_args) as sb:
     # Open the target website
     sb.open("https://online-voice-recorder.com/")
     input("Press Enter to continue...")
