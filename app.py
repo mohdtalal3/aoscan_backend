@@ -74,6 +74,24 @@ def process_queue_worker():
                     else:
                         print(f"⚠️  Could not update Google Sheet for {email}")
                     
+                    # Delete audio file from frontend server
+                    audio_url = client_data.get('audio_url')
+                    if audio_url:
+                        try:
+                            # Extract filename from URL
+                            filename = audio_url.split('/')[-1]
+                            delete_url = audio_url.replace(f'/serve-audio/{filename}', f'/delete-audio/{filename}')
+                            
+                            print(f"🗑️  Deleting audio from frontend server: {filename}")
+                            delete_response = requests.delete(delete_url, timeout=10)
+                            
+                            if delete_response.status_code == 200:
+                                print(f"✅ Audio file deleted from frontend: {filename}")
+                            else:
+                                print(f"⚠️  Could not delete audio from frontend: {delete_response.status_code}")
+                        except Exception as e:
+                            print(f"⚠️  Error deleting audio from frontend: {str(e)}")
+                    
                     # Cleanup user folder (contains all generated files)
                     print(f"🗑️  Cleaning up user folder...")
                     cleanup_user_folder(user_folder)
@@ -195,7 +213,8 @@ def submit_client():
             'height': data['height'],
             'height_unit': data['height_unit'],
             'date_of_birth': data['date_of_birth'],
-            'audio_file': audio_filepath
+            'audio_file': audio_filepath,
+            'audio_url': audio_url  # Store for later deletion
         }
         
         # Add to queue for background processing
