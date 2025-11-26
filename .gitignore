@@ -1,6 +1,10 @@
 .env
 file.wav
 temp_audio/
+temp_users/
 audio_upload/
 downloaded_files/
 chromedata/
+images/
+*.pdf
+*.mp3

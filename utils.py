@@ -222,7 +222,7 @@ def create_pdf_report(image_folder="images", output_file="report.pdf", notes_ord
     else:
         print("❌ No PDFs to merge!")
 
-def image_notes_downloader(sb,notes_to_download=None):
+def image_notes_downloader(sb, notes_to_download=None, folder="images"):
     # Using SeleniumBase context manager
     sb.click('button span[data-i18n="ao-innervoice-reports"]',timeout=1000)
     time.sleep(3)
@@ -235,7 +235,7 @@ def image_notes_downloader(sb,notes_to_download=None):
    # input("Press Enter to start downloading SVGs...")
     print("Downloading common SVGs...")
     for svg_obj in common_svgs:
-        download_svg_object(sb, svg_obj["id"], svg_obj["filename"])
+        download_svg_object(sb, svg_obj["id"], svg_obj["filename"], folder=folder)
     
     # Download specific notes if provided
     if notes_to_download:
@@ -245,7 +245,7 @@ def image_notes_downloader(sb,notes_to_download=None):
                 note_id = NOTE_TO_PATH[note]
                 print(f"Downloading note: {note_id}")
                 filename = f"{note.replace('#', 'Sharp')}"
-                download_svg_object(sb, f"#{note_id}", filename)
+                download_svg_object(sb, f"#{note_id}", filename, folder=folder)
             else:
                 print(f"Unknown note: {note}")
     else:
@@ -254,7 +254,7 @@ def image_notes_downloader(sb,notes_to_download=None):
         for note, note_id in NOTE_TO_PATH.items():
             filename = f"{note.replace('#', 'Sharp')}"
             try:
-                download_svg_object(sb, f"#{note_id}", filename)
+                download_svg_object(sb, f"#{note_id}", filename, folder=folder)
             except Exception as e:
                 print(f"Note {note} not found or error: {str(e)}")
     
@@ -266,7 +266,7 @@ import requests
 
 import shutil
 
-def get_notes_audio(notes, source_folder="notes_audio"):
+def get_notes_audio(notes, source_folder="notes_audio", user_folder=None):
     """
     Copy pre-downloaded audio files for the specified notes
     Files are located in backend/notes_audio/ directory
@@ -274,6 +274,7 @@ def get_notes_audio(notes, source_folder="notes_audio"):
     Args:
         notes: List of musical notes (e.g., ['C', 'D#', 'E'])
         source_folder: Folder containing pre-downloaded audio files
+        user_folder: User-specific folder to copy files to
     
     Returns:
         List of file paths that were copied
@@ -311,12 +312,15 @@ def get_notes_audio(notes, source_folder="notes_audio"):
             print(f"⚠️  Audio file not found: {source_path}")
             continue
         
-        # Copy file to current directory with same name
-        destination_path = filename
+        # Copy file to user folder if specified, otherwise current directory
+        if user_folder:
+            destination_path = os.path.join(user_folder, filename)
+        else:
+            destination_path = filename
         
         try:
             shutil.copy2(source_path, destination_path)
-            print(f"✅ Copied: {filename}")
+            print(f"✅ Copied: {filename} to {destination_path}")
             copied_files.append(destination_path)
         except Exception as e:
             print(f"❌ Error copying {filename}: {str(e)}")

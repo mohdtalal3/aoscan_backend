@@ -14,9 +14,11 @@ CORS(app)  # Enable CORS for frontend-backend communication
 # Configuration
 FRONTEND_UPLOADS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../frontend/uploads'))
 BACKEND_TEMP_DIR = os.path.join(os.path.dirname(__file__), 'temp_audio')
+TEMP_USERS_DIR = os.path.join(os.path.dirname(__file__), 'temp_users')
 
 # Ensure directories exist
 os.makedirs(BACKEND_TEMP_DIR, exist_ok=True)
+os.makedirs(TEMP_USERS_DIR, exist_ok=True)
 
 # Initialize queue for background processing
 request_queue = queue.Queue()
@@ -42,19 +44,20 @@ def process_queue_worker():
         
         try:
             # Call the process_form_data function from main.py
-            from main import process_form_data
+            from main import process_form_data, cleanup_user_folder
             result = process_form_data(client_data)
             
             if result and result.get('success'):
                 print(f"\n✅ Successfully processed: {client_data.get('first_name')} {client_data.get('last_name')}\n")
                 
                 # Send email with attachments
-                from email_utils import send_email_with_attachments, update_google_sheet_expire_status, cleanup_generated_files
+                from email_utils import send_email_with_attachments, update_google_sheet_expire_status
                 
                 pdf_path = result.get('pdf_path')
                 audio_files = result.get('audio_files', [])
                 email = result.get('email')
                 name = result.get('name')
+                user_folder = result.get('user_folder')
                 
                 print(f"📧 Sending email to {email}...")
                 email_sent = send_email_with_attachments(email, name, pdf_path, audio_files)
@@ -71,16 +74,30 @@ def process_queue_worker():
                     else:
                         print(f"⚠️  Could not update Google Sheet for {email}")
                     
-                    # Cleanup generated files
-                    print(f"🗑️  Cleaning up generated files...")
-                    cleanup_generated_files(pdf_path, audio_files, images_folder='images')
+                    # Cleanup user folder (contains all generated files)
+                    print(f"🗑️  Cleaning up user folder...")
+                    cleanup_user_folder(user_folder)
                 else:
                     print(f"⚠️  Email sending failed for {email}. Files not deleted.")
+                    # Don't delete folder if email fails, for manual review
+            else:
+                # Processing failed
+                error_msg = result.get('error', 'Unknown error')
+                should_retry = result.get('should_retry', False)
+                print(f"\n❌ Processing failed for {client_data.get('first_name')} {client_data.get('last_name')}: {error_msg}\n")
+                
+                if should_retry:
+                    print(f"🔄 Re-queuing {client_data.get('first_name')} {client_data.get('last_name')} for retry...")
+                    request_queue.put(client_data)
                     
         except Exception as e:
-            print(f"\n❌ Error processing {client_data.get('first_name')} {client_data.get('last_name')}: {str(e)}\n")
+            print(f"\n❌ Unexpected error processing {client_data.get('first_name')} {client_data.get('last_name')}: {str(e)}\n")
             import traceback
             traceback.print_exc()
+            
+            # On unexpected error, try to re-queue
+            print(f"🔄 Re-queuing {client_data.get('first_name')} {client_data.get('last_name')} due to unexpected error...")
+            request_queue.put(client_data)
         
         finally:
             # Clean up: remove the downloaded audio file after processing
