@@ -138,6 +138,7 @@ def submit_client():
         try:
             # The audio_url will be something like: http://localhost:5000/uploads/recording_20250101_120000.wav
             # We need to download this file to backend
+            print(f"🔽 Attempting to download audio from: {audio_url}")
             response = requests.get(audio_url, timeout=30)
             
             if response.status_code == 200:
@@ -152,11 +153,15 @@ def submit_client():
                 
                 print(f"✅ Audio file downloaded: {audio_filepath}")
             else:
+                print(f"❌ Failed to download audio. Status: {response.status_code}")
                 return jsonify({
                     'success': False,
                     'error': f'Failed to download audio file. Status: {response.status_code}'
                 }), 500
         except Exception as e:
+            print(f"❌ Error downloading audio from {audio_url}: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return jsonify({
                 'success': False,
                 'error': f'Error downloading audio: {str(e)}'
@@ -196,6 +201,8 @@ def submit_client():
         
     except Exception as e:
         print(f"❌ Server error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'success': False,
             'error': f'Server error: {str(e)}'
@@ -224,4 +231,5 @@ if __name__ == '__main__':
     print("🚀 Starting Flask Backend Server...")
     print(f"📁 Frontend uploads directory: {FRONTEND_UPLOADS_DIR}")
     print(f"📁 Backend temp directory: {BACKEND_TEMP_DIR}")
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    #app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=5000)
